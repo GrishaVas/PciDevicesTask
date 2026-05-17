@@ -1,4 +1,4 @@
-#include <sys/io.h>
+﻿#include <sys/io.h>
 #include <stdio.h>
 #include <limits.h>
 #include "pci.h"
@@ -28,6 +28,7 @@ int main()
         return 1;
     }
 
+    //Функция вывода Pci устройств
     printPciDevices();
 
     return 0;
@@ -35,9 +36,11 @@ int main()
 
 void printPciDevices()
 {
+    //установка бита enable
     unsigned int address = 0 |
         1 << 31;
 
+    //Установка шага для адресов порта управления
     unsigned int busStep = 1 << 16;
     unsigned int deviceStep = 1 << 11;
     unsigned int functionStep = 1 << 8;
@@ -52,7 +55,10 @@ void printPciDevices()
 
             for (size_t k = 0; k < 8; k++)
             {
+                //Установка адреса в регистр конфигурации
                 outl(deviceAddress, 0x0CF8);
+
+                //Получение значение регистра данных
                 unsigned int data = inl(0x0CFC);
 
                 if (data == 0 || data == UINT_MAX)
@@ -61,14 +67,22 @@ void printPciDevices()
                 }
 
                 // printf("data: %x\n", data);
-
+               
+                //Получение кода устройства и кода производителя
                 unsigned short deviceCode = getDeviceCode(data);
                 unsigned short vendorCode = getVendorCode(data);
+
+                //Расшифровка кода устройства и кода производителя
                 char* deviceName = getDeviceName(deviceCode, vendorCode);
                 char* vendorName = getVendorName(vendorCode);
 
+                //Вывод описания
                 printPciDeviceDescription(deviceAddress, vendorCode, deviceCode, vendorName, deviceName);
+
+                //Вывод ExpansionROMBaseAddress
                 printExpansionROMBaseAddress(deviceAddress);
+
+                //Вывод HeaderType
                 printHeaderType(deviceAddress);
 
                 printf("\n");
@@ -90,9 +104,11 @@ void printPciDevices()
 
 void printExpansionROMBaseAddress(unsigned int address)
 {
+    //Установка адреса для получения ExpansionROMBaseAddress
     unsigned int addressForExpansionROMBaseAddress = getAddressForExpansionROMBaseAddress(address);
 
     outl(addressForExpansionROMBaseAddress, 0x0CF8);
+    //Получение ExpansionROMBaseAddress
     unsigned int data = inl(0x0CFC);
 
     printf("Expansion ROM Base Address: %x\n", data);
@@ -100,14 +116,18 @@ void printExpansionROMBaseAddress(unsigned int address)
 
 unsigned int getAddressForExpansionROMBaseAddress(unsigned int address)
 {
-    return address + (0x38 << 2);
+    //Смещение для ExpansionROMBaseAddress
+    return address + 0x30;
 }
 
 void printHeaderType(unsigned int address)
 {
+    //Установка адреса для получения HeaderType
     unsigned int addressForHeaderType = getAddressForHeaderTypeData(address);
 
+    //Установка адреса в регистр конфигурации
     outl(addressForHeaderType, 0x0CF8);
+    //Получение HeaderType
     unsigned int data = inl(0x0CFC);
 
     unsigned char headerType = getHeaderType(data);
@@ -119,7 +139,8 @@ void printHeaderType(unsigned int address)
 
 unsigned int getAddressForHeaderTypeData(unsigned int address)
 {
-    return address + (0x0C << 2);
+    //Смещение для HeaderType
+    return address + 0x0C;
 }
 
 unsigned char getHeaderType(unsigned int data)
